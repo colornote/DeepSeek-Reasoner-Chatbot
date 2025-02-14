@@ -15,4 +15,34 @@
   :where(code[class~='highlight']) {
     background-color: var(--accent-a5);
   }
+
+  p {
+    @apply my-4;
+  }
+
+  p:has(+ p) {
+    @apply mb-2;
+  }
+
+  p:first-child {
+    @apply mt-0;
+  }
+
+  p:last-child {
+    @apply mb-0;
+  }
+
+  /* 思维链样式 */
+  .reasoning-content {
+    @apply text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg my-2;
+    p {
+      @apply my-2;
+      &:first-child {
+        @apply mt-0;
+      }
+      &:last-child {
+        @apply mb-0;
+      }
+    }
+  }
 }

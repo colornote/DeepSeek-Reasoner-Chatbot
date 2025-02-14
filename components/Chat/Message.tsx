@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { Avatar, Flex, IconButton, Tooltip } from '@radix-ui/themes'
+import { Avatar, Flex, IconButton, Text, Tooltip } from '@radix-ui/themes'
 import { FaRegCopy } from 'react-icons/fa'
 import { HiUser } from 'react-icons/hi'
+import { MdExpandLess, MdExpandMore } from 'react-icons/md'
 import { RiRobot2Line } from 'react-icons/ri'
 import { Markdown } from '@/components'
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
@@ -18,6 +19,7 @@ const Message = (props: MessageProps) => {
   const isUser = role === 'user'
   const copy = useCopyToClipboard()
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false)
+  const [showThoughtChain, setShowThoughtChain] = useState<boolean>(true)
 
   const onCopy = useCallback(() => {
     copy(content, (isSuccess) => {
@@ -26,6 +28,42 @@ const Message = (props: MessageProps) => {
       }
     })
   }, [content, copy])
+
+  // 提取思维链内容和主要内容
+  const extractThoughtChain = (content: string) => {
+    const thoughts: string[] = []
+    let mainContent = ''
+
+    // 提取思维链
+    const reasoningRegex = /\[Reasoning\]([\s\S]*?)\[\/Reasoning\]/g
+    let match
+    while ((match = reasoningRegex.exec(content)) !== null) {
+      const thought = match[1]
+      if (thought && thought !== 'null') {
+        thoughts.push(thought)
+      }
+    }
+
+    // 提取主要内容
+    const contentRegex = /\[Content\]([\s\S]*?)\[\/Content\]/g
+    let contentParts: string[] = []
+    while ((match = contentRegex.exec(content)) !== null) {
+      const contentPart = match[1]
+      if (contentPart) {
+        contentParts.push(contentPart)
+      }
+    }
+
+    mainContent = contentParts.length > 0 ? contentParts.join('') : ""
+
+    return {
+      thoughts: thoughts.join(''),
+      mainContent
+    }
+  }
+
+  const { thoughts, mainContent } = extractThoughtChain(content)
+  const hasThoughts = thoughts.length > 0
 
   return (
     <Flex gap="4" className="mb-5">
@@ -41,14 +79,31 @@ const Message = (props: MessageProps) => {
             className="userMessage"
             dangerouslySetInnerHTML={{
               __html: content.replace(
-                /<(?!\/?br\/?.+?>|\/?img|\/?table|\/?thead|\/?tbody|\/?tr|\/?td|\/?th.+?>)[^<>]*>/gi,
+                /<(?!\/?(br|img|table|thead|tbody|tr|td|th)\b)[^>]*>/gi,
                 ''
               )
             }}
           ></div>
         ) : (
           <Flex direction="column" gap="4">
-            <Markdown>{content}</Markdown>
+            {hasThoughts && (
+              <Flex direction="column" className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                <Flex align="center" gap="2" className="cursor-pointer" onClick={() => setShowThoughtChain(!showThoughtChain)}>
+                  <Text size="2" weight="bold" color="gray">
+                    思维链
+                  </Text>
+                  {showThoughtChain ? <MdExpandLess /> : <MdExpandMore />}
+                </Flex>
+                {showThoughtChain && (
+                  <Flex direction="column" gap="2" className="mt-2">
+                    <Text size="2" color="gray" className="pl-4 border-l-2 border-gray-300">
+                      {thoughts}
+                    </Text>
+                  </Flex>
+                )}
+              </Flex>
+            )}
+            <Markdown>{mainContent}</Markdown>
             <Flex gap="4" align="center">
               <Tooltip open={tooltipOpen} content="Copied!">
                 <IconButton
